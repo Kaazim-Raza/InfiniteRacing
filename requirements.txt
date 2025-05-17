@@ -1,0 +1,22 @@
+fastapi == 0.115.12
+uvicorn == 0.34.2
+
+# Database and ORM
+sqlalchemy==2.0.30
+asyncpg==0.29.0              # For PostgreSQL (recommended for production)
+alembic==1.13.1              # For migrations
+
+# Authentication
+python-jose==3.3.0           # For JWT
+passlib[bcrypt]==1.7.4       # For hashing passwords
+
+# Pydantic
+pydantic==2.6.4
+pydantic-settings==2.2.1     # For managing config/env vars
+
+# Optional Dev Tools
+python-dotenv==1.0.1         # For .env support
+httpx==0.27.0                # For testing or API calls
+
+
+python-multipart==0.0.20s
