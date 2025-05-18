@@ -9,7 +9,7 @@ router = APIRouter()
 
 @router.get("/profile")
 def view_profile(payload=Depends(role_required(["root", "admin", "viewer"]))):
-    return {"msg": f"Welcome {payload['role']}"}
+    return {"msg": f"Welcome {payload['username']}, your role is {payload['role']}"}
 
 # @router.get("/manage-users")
 # def root_manage_users(payload=Depends(role_required("root"))):
@@ -66,8 +66,32 @@ def admin_send_invite(
     return {"msg": "Invite sent"}
 
 @router.get("/my-team")
-def admin_view_team(payload=Depends(role_required("admin"))):
-    return {"msg": "Team overview for manager"}
+def get_my_team(
+    payload=Depends(role_required(["admin", "viewer"])),
+    db: Session = Depends(get_db)
+):
+    user_id = payload["id"]
+    role = payload["role"]
+
+    if role == "admin":
+        # Admin's team: viewers assigned to them
+        team_members = db.query(User).filter(User.admin_id == user_id).all()
+        return [
+            {"id": u.id, "username": u.username, "role": u.role}
+            for u in team_members
+        ]
+    
+    elif role == "viewer":
+        # Viewer: show info about their admin
+        viewer = db.query(User).filter(User.id == user_id).first()
+        if viewer.admin_id is None:
+            return {"msg": "You are not part of any team"}
+        
+        admin = db.query(User).filter(User.id == viewer.admin_id).first()
+        return {
+            "admin": {"id": admin.id, "username": admin.username},
+        }
+
 
 @router.get("/my-invites")
 def get_my_invites(
@@ -80,6 +104,8 @@ def get_my_invites(
         for i in invites
     ]
     
+
+
 @router.post("/respond-invite")
 def respond_invite(
     invite_id: int,
@@ -95,6 +121,11 @@ def respond_invite(
         raise HTTPException(status_code=400, detail="Invalid response")
 
     invite.status = InviteStatus.accepted if response == "accept" else InviteStatus.rejected
+
+    # ✅ If accepted, assign viewer to the admin
+    if response == "accept":
+        viewer = db.query(User).filter_by(id=payload["id"]).first()
+        viewer.admin_id = invite.admin_id
+
     db.commit()
     return {"msg": f"Invite {response}ed"}
-

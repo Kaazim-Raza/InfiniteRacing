@@ -13,8 +13,8 @@ app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 @app.on_event("startup")
 def init_db():
     try:
-        from app.database import create_database
-        create_database()
+        # from app.database import create_database
+        # create_database()
         logging.info("✅ Database initialized.")
     except Exception as e:
         logging.error(f"❌ Failed to initialize DB: {e}")

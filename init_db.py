@@ -1,2 +1,2 @@
-from app.database import create_database
-create_database()
+# from app.database import create_database
+# create_database()

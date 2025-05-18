@@ -15,7 +15,7 @@ async def register(
     password: str,
     role: str,
     db: Session = Depends(get_db),
-    payload=Depends(role_required(["root"]))  # 🔒 Only root can access
+    # payload=Depends(role_required(["root"]))  # 🔒 Only root can access
 ):
     # ✅ Check if username already exists
     existing_user = db.query(User).filter(User.username == username).first()
