@@ -1,6 +1,13 @@
-def role_required(allowed_roles: list[str]):
-    def inner(payload: dict = Depends(verify_token)):
-        if payload.get("role") not in allowed_roles:
-            raise HTTPException(status_code=403, detail="Permission denied")
-        return payload
-    return inner
+from sqlalchemy import Column, Integer, String, Date, Time
+from app.database import Base
+
+class Event(Base):
+    __tablename__ = "events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    date = Column(Date, nullable=False)
+    time = Column(Time, nullable=False)
+    venue = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    created_at = Column(Date, nullable=False)

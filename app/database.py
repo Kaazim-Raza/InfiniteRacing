@@ -60,7 +60,7 @@ def get_db():
         db.close()
 
 # ✅ Optional utility function to create tables
-def create_database():
-    # Import all models here so Base.metadata has them
-    from app import models  # assumes you have models/__init__.py that imports all models
-    Base.metadata.create_all(bind=engine)
+# def create_database():
+#     # Import all models here so Base.metadata has them
+#     from app import models  # assumes you have models/__init__.py that imports all models
+#     Base.metadata.create_all(bind=engine)
