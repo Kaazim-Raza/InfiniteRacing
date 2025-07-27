@@ -1,10 +1,12 @@
 "use client"
 
 import type React from "react"
-
+// import api from "../../../lib/axios"
+import api from "../../../../lib/axios";
 import { useState, useEffect } from "react"
 import { Calendar, Users, Clock, Save, Eye, ArrowLeft, CheckCircle, AlertCircle } from "lucide-react"
 import Link from "next/link"
+// import { useRouter } from "next/router";
 
 interface RaceFormData {
   name: string
@@ -47,6 +49,7 @@ export default function CreateRacePage() {
   })
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  // const router = useRouter();
 
   useEffect(() => {
     setIsLoaded(true)
@@ -113,12 +116,46 @@ export default function CreateRacePage() {
     setCurrentStep((prev) => Math.max(prev - 1, 1))
   }
 
-  const handleSubmit = () => {
-    if (validateStep(3)) {
-      console.log("Creating race:", formData)
-      // Handle race creation
+  // const handleSubmit = () => {
+  //   if (validateStep(3)) {
+  //     console.log("Creating race:", formData)
+  //     // Handle race creation
+  //   }
+  // }
+
+    const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    try {
+      const payload = {
+    name: formData.name,
+    description: formData.description,
+    date: formData.date, // assuming it's in YYYY-MM-DD
+    time: formData.time, // assuming it's in HH:MM
+    location: formData.location,
+    high_school_only: formData.highSchoolOnly,
+
+    team_type: formData.allowCoed
+      ? "coed"
+      : formData.allowMale
+      ? "male"
+      : "female",
+
+    coed_min_male: parseInt(formData.minMaleRunners),
+    coed_min_female: parseInt(formData.minFemaleRunners),
+    max_runners: parseInt(formData.maxRunnersPerTeam),
+
+    registration_deadline: new Date(formData.registrationDeadline).toISOString(),
+    entry_fee: parseFloat(formData.entryFee),
+};
+
+      await api.post("/admin/races/", payload);
+      alert("Race created successfully!");
+      // router.push("/races");
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to create race");
     }
-  }
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">

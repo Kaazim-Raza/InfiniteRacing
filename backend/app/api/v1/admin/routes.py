@@ -79,3 +79,8 @@ def get_user_stats(db: Session = Depends(get_db)):
         "vice_manager": db.query(User).filter(User.role == RoleEnum.vice_manager).count(),
         "runner": db.query(User).filter(User.role == RoleEnum.runner).count(),
     }
+
+@router.get("/users/", response_model=List[UserOut])
+def get_all_users(db: Session = Depends(get_db)):
+        users = db.query(User).all()
+        return users

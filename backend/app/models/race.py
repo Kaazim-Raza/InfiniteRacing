@@ -18,3 +18,8 @@ class Race(Base):
     description = Column(String, nullable=True)
     max_runners = Column(Integer, nullable=False)
     high_school_only = Column(Boolean, default=False)
+    team_type = Column(String, nullable=True)
+    coed_min_male = Column(Integer, nullable=True)
+    coed_min_female = Column(Integer, nullable=True)
+    registration_deadline = Column(DateTime, nullable=False)
+    entry_fee = Column(Float, nullable=False)

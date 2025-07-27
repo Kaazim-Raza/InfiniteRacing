@@ -5,6 +5,8 @@ from app.core.database import SessionLocal
 from app.core.security import verify_password, create_access_token
 from app.models.user import User
 from app.schemas.user import Token, UserOut
+from fastapi import Depends
+from app.core.auth import get_current_user
 
 router = APIRouter()
 
@@ -14,6 +16,14 @@ def get_db():
         yield db
     finally:
         db.close()
+
+@router.get("/me")
+def get_profile(current_user: User = Depends(get_current_user)):
+    return {
+        "email": current_user.email,
+        "role": current_user.role,
+        "name": current_user.first_name + " " + current_user.last_name,
+    }
 
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
