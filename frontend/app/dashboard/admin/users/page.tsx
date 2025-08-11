@@ -439,6 +439,7 @@ import {
   MoreVertical,
 } from "lucide-react"
 import axios from "../../../lib/axios"
+import { useRouter } from "next/navigation"
 
 type User = {
   id: number
@@ -470,6 +471,7 @@ export default function AdminUsersPage() {
   const [selectedUsers, setSelectedUsers] = useState<number[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [stats, setStats] = useState<UserStats | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
     setIsLoaded(true)
@@ -497,6 +499,45 @@ export default function AdminUsersPage() {
     fetchUsers()
     fetchStats()
   }, [])
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<number[]>([])
+
+  const confirmDeleteUsers = (userIds: number[]) => {
+    setPendingDeleteIds(userIds)
+    setShowDeleteModal(true)
+  }
+
+  const handleDeleteConfirmed = async () => {
+    try {
+      if (pendingDeleteIds.length === 1) {
+        await axios.delete(`/admin/users/${pendingDeleteIds[0]}`)
+      } else if (pendingDeleteIds.length > 1) {
+        await Promise.all(pendingDeleteIds.map(id => axios.delete(`/admin/users/${id}`)))
+      }
+      const response = await axios.get("/admin/users/")
+      setUsers(response.data)
+      clearSelection()
+    } catch (error) {
+      console.error("Error deleting users:", error)
+    } finally {
+      setShowDeleteModal(false)
+      setPendingDeleteIds([])
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false)
+    setPendingDeleteIds([])
+  }
+
+  useEffect(() => {
+    // Optionally, you could listen for changes in selectedUsers and auto-delete, but usually deletion is triggered by a button.
+    // Example: If you want to delete when selectedUsers changes and is not empty:
+    // if (selectedUsers.length > 0) {
+    //   deleteUsers(selectedUsers)
+    // }
+  }, [selectedUsers])
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
@@ -549,14 +590,16 @@ export default function AdminUsersPage() {
   }
 
   return (
+
     <div className="space-y-8">
       {/* Header */}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="heading-font text-3xl font-bold text-[#EAEAE8] mb-2">User Management</h1>
           <p className="text-[#868684]">Manage user accounts, roles, and permissions</p>
         </div>
-        <button className="mt-4 sm:mt-0 bg-[#EAEAE8] text-black px-6 py-3 font-bold hover:bg-white transition-all duration-300 flex items-center space-x-2 hover:scale-105">
+        <button  onClick={() => router.push("/dashboard/admin/users/addUser")} className="mt-4 sm:mt-0 bg-[#EAEAE8] text-black px-6 py-3 font-bold hover:bg-white transition-all duration-300 flex items-center space-x-2 hover:scale-105">
           <Plus className="w-5 h-5" />
           <span>Add User</span>
         </button>
@@ -663,12 +706,18 @@ export default function AdminUsersPage() {
                       <button className="p-2 text-[#868684] hover:text-blue-400 transition-colors">
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button className="p-2 text-[#868684] hover:text-green-400 transition-colors">
+                      <button
+                      onClick={() => router.push(`/dashboard/admin/users/${user.id}`)}
+                      className="p-2 text-[#868684] hover:text-green-400 transition-colors">
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button className="p-2 text-[#868684] hover:text-red-400 transition-colors">
+                        <button
+                        className="p-2 text-[#868684] hover:text-red-400 transition-colors"
+                        onClick={() => confirmDeleteUsers([user.id])}
+                        title="Delete user"
+                        >
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                        </button>
                       <button className="p-2 text-[#868684] hover:text-white transition-colors">
                         <MoreVertical className="w-4 h-4" />
                       </button>
@@ -680,6 +729,29 @@ export default function AdminUsersPage() {
           </table>
           </div>
           </div>
+      {showDeleteModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-black rounded-lg p-6 w-96">
+            <h2 className="text-lg font-bold mb-4">Confirm Deletion</h2>
+            <p className="mb-4">Are you sure you want to delete {pendingDeleteIds.length} user(s)?</p>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={handleDeleteCancel}
+                className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirmed}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+              >
+                Confirm Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+          
     </div>
   )
 }

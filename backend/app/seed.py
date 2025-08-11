@@ -1,7 +1,7 @@
-from app.core.database import SessionLocal
-from app.models.user import User
-from app.core.security import get_password_hash
-from app.schemas.user import RoleEnum  # Adjust import if needed
+from core.database import SessionLocal
+from models.user import User
+from core.security import get_password_hash
+from schemas.user import RoleEnum  # Adjust import if needed
 
 def seed_users():
     db = SessionLocal()

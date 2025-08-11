@@ -1,8 +1,8 @@
-"""initial schema
+"""your_message_here
 
-Revision ID: 356d4b8e589c
+Revision ID: 56d3af84c80d
 Revises: 
-Create Date: 2025-07-25 23:35:36.301991
+Create Date: 2025-08-09 17:20:41.132131
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '356d4b8e589c'
+revision: str = '56d3af84c80d'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -29,6 +29,11 @@ def upgrade() -> None:
     sa.Column('description', sa.String(), nullable=True),
     sa.Column('max_runners', sa.Integer(), nullable=False),
     sa.Column('high_school_only', sa.Boolean(), nullable=True),
+    sa.Column('team_type', sa.String(), nullable=True),
+    sa.Column('coed_min_male', sa.Integer(), nullable=True),
+    sa.Column('coed_min_female', sa.Integer(), nullable=True),
+    sa.Column('registration_deadline', sa.DateTime(), nullable=False),
+    sa.Column('entry_fee', sa.Float(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_races_id'), 'races', ['id'], unique=False)

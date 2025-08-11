@@ -84,3 +84,26 @@ def get_user_stats(db: Session = Depends(get_db)):
 def get_all_users(db: Session = Depends(get_db)):
         users = db.query(User).all()
         return users
+
+@router.get("/users/{user_id}", response_model=UserOut)
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@router.patch("/users/{user_id}", response_model=UserOut)
+def partial_update_user(user_id: int, user_update: UserCreate, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    update_data = user_update.dict(exclude_unset=True)
+    # Remove password if present
+    update_data.pop("password", None)
+    allowed_fields = {"first_name", "last_name", "email", "role"}
+    for field in allowed_fields:
+        if field in update_data:
+            setattr(user, field, update_data[field])
+    db.commit()
+    db.refresh(user)
+    return user
