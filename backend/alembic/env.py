@@ -23,7 +23,7 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 # target_metadata = None
 from app.core.database import Base
-from app.models import user, race  # Add more as you define other models
+from app.models import user, race,team, invite  # Add more as you define other models
 target_metadata = Base.metadata
 
 

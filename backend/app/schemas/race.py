@@ -21,9 +21,10 @@ class RaceBase(BaseModel):
     coed_min_female: Optional[int]
     registration_deadline: datetime
     entry_fee: float
+    max_number_of_teams: Optional[int] = None
 
 class RaceCreate(RaceBase):
-    pass
+    number_of_teams: Optional[int] = 0
 
 class RaceOut(RaceBase):
     id: int

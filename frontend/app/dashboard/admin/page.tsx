@@ -3,14 +3,9 @@
 import { useState, useEffect } from "react"
 import { Users, Calendar, Trophy, DollarSign, AlertCircle, CheckCircle, Plus } from "lucide-react"
 import Link from "next/link"
+import axios from "../../lib/axios"
 
 // Mock data
-const dashboardStats = [
-  { label: "Total Races", value: "24", change: "+12%", icon: Calendar, color: "text-blue-400" },
-  { label: "Active Teams", value: "156", change: "+8%", icon: Users, color: "text-green-400" },
-  { label: "Total Runners", value: "624", change: "+15%", icon: Trophy, color: "text-purple-400" },
-  { label: "Revenue", value: "$12,450", change: "+22%", icon: DollarSign, color: "text-yellow-400" },
-]
 
 const recentRaces = [
   { id: 1, name: "Spring Championship", date: "2024-03-15", teams: 32, status: "upcoming", compliance: "valid" },
@@ -27,6 +22,53 @@ const recentActivity = [
 
 export default function AdminDashboard() {
   const [isLoaded, setIsLoaded] = useState(false)
+  const [races, setRaces] = useState([])
+  const[dashboard, setDashboardStats] = useState([])
+//   const dashboardStats = [
+//   { label: "Total Races", value: "24", change: "+12%", icon: Calendar, color: "text-blue-400" },
+//   { label: "Active Teams", value: "156", change: "+8%", icon: Users, color: "text-green-400" },
+//   { label: "Total Runners", value: "624", change: "+15%", icon: Trophy, color: "text-purple-400" },
+//   { label: "Revenue", value: "$12,450", change: "+22%", icon: DollarSign, color: "text-yellow-400" },
+// ]
+
+
+  useEffect(() => {
+    async function fetchRaces() {
+      try {
+        const res = await axios.get("/admin/races")
+        // const data = await res.json()
+        // Set status based on date
+        const now = new Date()
+        const processed = res.data.map((race: any) => {
+          const raceDate = new Date(race.date)
+          let status: "upcoming" | "ongoing" | "completed"
+          if (raceDate > now) status = "upcoming"
+          else if (raceDate.toDateString() === now.toDateString()) status = "ongoing"
+          else status = "completed"
+          return { ...race, status }
+        })
+        console.log("Races",processed)
+        setRaces(processed)
+       const statsRes = await axios.get("/admin/dashboard/stats")
+        const apiData = statsRes.data // { runners_count, races_count }
+
+        const updatedStats = [
+          { label: "Total Races", value: apiData.races_count?.toString() ?? "0", change: "+12%", icon: Calendar, color: "text-blue-400" },
+          { label: "Active Teams", value: "156", change: "+8%", icon: Users, color: "text-green-400" },
+          { label: "Total Runners", value: apiData.runners_count?.toString() ?? "0", change: "+15%", icon: Trophy, color: "text-purple-400" },
+          { label: "Revenue", value: "$12,450", change: "+22%", icon: DollarSign, color: "text-yellow-400" },
+        ]
+
+        setDashboardStats(updatedStats)
+        setIsLoaded(true)
+
+      } catch (e) {
+        setRaces([])
+        console.log("Error fetchings")
+      }
+    }
+    fetchRaces()
+  }, [])
 
   useEffect(() => {
     setIsLoaded(true)
@@ -51,7 +93,7 @@ export default function AdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {dashboardStats.map((stat, index) => (
+        {dashboard.map((stat, index) => (
           <div
             key={index}
             className={`bg-[#868684]/5 border border-[#868684]/20 p-6 rounded-lg hover:bg-[#868684]/10 hover:border-[#EAEAE8]/40 transition-all duration-500 transform hover:-translate-y-1 ${
@@ -84,7 +126,7 @@ export default function AdminDashboard() {
             </div>
 
             <div className="space-y-4">
-              {recentRaces.map((race, index) => (
+              {races.map((race, index) => (
                 <div
                   key={race.id}
                   className={`flex items-center justify-between p-4 bg-black/20 border border-[#868684]/10 rounded-lg hover:bg-[#868684]/10 hover:border-[#EAEAE8]/20 transition-all duration-300 ${

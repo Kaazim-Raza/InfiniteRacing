@@ -103,7 +103,7 @@ export interface User {
   avatar?: string
 }
 
-const API_URL = "http://localhost:8000/api/v1" // Change if your backend is hosted elsewhere
+const API_URL = "http://192.168.100.59:8000/api/v1" // Change if your backend is hosted elsewhere
 
 export async function authenticateUser(email: string, password: string): Promise<User | null> {
   try {

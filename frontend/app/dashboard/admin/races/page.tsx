@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
+import axios from "../../../lib/axios"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Calendar,
@@ -25,6 +26,7 @@ import {
   AlertCircle,
 } from "lucide-react"
 import Link from "next/link"
+import { useEffect } from "react"
 
 // Race Details Modal Component
 function RaceDetailsModal({
@@ -92,7 +94,7 @@ function RaceDetailsModal({
     }
   }
 
-  const totalRevenue = registeredTeams.length * race.entryFee
+  const totalRevenue = registeredTeams.length * race.entry_fee
   const registrationProgress = (registeredTeams.length / race.maxTeams) * 100
 
   return (
@@ -141,7 +143,7 @@ function RaceDetailsModal({
                   <div>
                     <p className="text-[#868684] text-sm">Entry Fee</p>
                     <p className="text-[#EAEAE8] font-medium flex items-center gap-2">
-                      <DollarSign className="w-4 h-4" />${race.entryFee} per team
+                      <DollarSign className="w-4 h-4" />${race.entry_fee} per team
                     </p>
                   </div>
                   <div>
@@ -344,6 +346,9 @@ export default function AdminRacesPage() {
   const [filterStatus, setFilterStatus] = useState("all")
   const [selectedRace, setSelectedRace] = useState<any>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [race, setRaces] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const races = [
     {
@@ -387,7 +392,28 @@ export default function AdminRacesPage() {
     },
   ]
 
-  const filteredRaces = races.filter((race) => {
+
+
+  useEffect(() => {
+    const fetchRaces = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await axios.get("/admin/races")
+        
+        // const data = await res.json()
+      console.log(res)
+        setRaces(res.data)
+      } catch (err: any) {
+        setError(err.message || "Unknown error")
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchRaces()
+  }, [])
+
+  const filteredRaces = race.filter((race) => {
     const matchesSearch =
       race.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       race.location.toLowerCase().includes(searchTerm.toLowerCase())
@@ -504,7 +530,7 @@ export default function AdminRacesPage() {
                   </div>
                   <div>
                     <p className="text-sm text-[#868684]">Entry Fee</p>
-                    <p className="font-medium text-white">${race.entryFee}</p>
+                    <p className="font-medium text-white">${race.entry_fee}</p>
                   </div>
                   <div>
                     <p className="text-sm text-[#868684]">Teams</p>
@@ -579,7 +605,7 @@ export default function AdminRacesPage() {
                     </div>
                     <div>
                       <p className="text-sm text-[#868684]">Entry Fee</p>
-                      <p className="font-medium text-white">${race.entryFee}</p>
+                      <p className="font-medium text-white">${race.entry_fee}</p>
                     </div>
                     <div>
                       <p className="text-sm text-[#868684]">Teams</p>
@@ -654,7 +680,7 @@ export default function AdminRacesPage() {
                     </div>
                     <div>
                       <p className="text-sm text-[#868684]">Entry Fee</p>
-                      <p className="font-medium text-white">${race.entryFee}</p>
+                      <p className="font-medium text-white">${race.entry_fee}</p>
                     </div>
                     <div>
                       <p className="text-sm text-[#868684]">Teams</p>
@@ -729,7 +755,7 @@ export default function AdminRacesPage() {
                     </div>
                     <div>
                       <p className="text-sm text-[#868684]">Entry Fee</p>
-                      <p className="font-medium text-white">${race.entryFee}</p>
+                      <p className="font-medium text-white">${race.entry_fee}</p>
                     </div>
                     <div>
                       <p className="text-sm text-[#868684]">Teams</p>

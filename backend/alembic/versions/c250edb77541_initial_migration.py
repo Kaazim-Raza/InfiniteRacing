@@ -1,8 +1,8 @@
-"""your_message_here
+"""Initial migration
 
-Revision ID: 56d3af84c80d
+Revision ID: c250edb77541
 Revises: 
-Create Date: 2025-08-09 17:20:41.132131
+Create Date: 2025-08-14 18:48:41.330027
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '56d3af84c80d'
+revision: str = 'c250edb77541'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -34,6 +34,8 @@ def upgrade() -> None:
     sa.Column('coed_min_female', sa.Integer(), nullable=True),
     sa.Column('registration_deadline', sa.DateTime(), nullable=False),
     sa.Column('entry_fee', sa.Float(), nullable=False),
+    sa.Column('max_number_of_teams', sa.Integer(), nullable=True),
+    sa.Column('number_of_teams', sa.Integer(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_races_id'), 'races', ['id'], unique=False)
@@ -61,6 +63,8 @@ def upgrade() -> None:
     sa.Column('years_of_experience', sa.String(), nullable=True),
     sa.Column('personal_best_5k', sa.String(), nullable=True),
     sa.Column('personal_best_10k', sa.String(), nullable=True),
+    sa.Column('manager_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['manager_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)

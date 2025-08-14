@@ -3,38 +3,13 @@
 import { useState, useEffect } from "react"
 import { Calendar, Trophy, Users, DollarSign, TrendingUp, Target, CheckCircle, Plus } from "lucide-react"
 import Link from "next/link"
+import axios from "../../lib/axios"
+import { getCurrentUser } from "../../lib/auth"
+
+
 
 // Mock data
-const stats = [
-  {
-    label: "Total Team Members",
-    value: 24,
-    icon: Users,
-    color: "text-blue-400",
-    change: "+3 this month",
-  },
-  {
-    label: "Active Registrations",
-    value: 5,
-    icon: Calendar,
-    color: "text-green-400",
-    change: "+2 pending",
-  },
-  {
-    label: "Completed Races",
-    value: 12,
-    icon: Trophy,
-    color: "text-purple-400",
-    change: "3 podium finishes",
-  },
-  {
-    label: "Total Fees Paid",
-    value: "$2,450",
-    icon: DollarSign,
-    color: "text-yellow-400",
-    change: "$750 this quarter",
-  },
-]
+
 
 const upcomingRaces = [
   {
@@ -110,10 +85,55 @@ const teamPerformance = [
 
 export default function ManagerDashboard() {
   const [isLoaded, setIsLoaded] = useState(false)
+  const [DashboardStats, setDashboardStats] = useState([])
+  const currentUser = getCurrentUser()
 
   useEffect(() => {
     setIsLoaded(true)
   }, [])
+  useEffect(() => {
+    async function fetchDashboardStats() {
+      try {
+        console.log("Fetching dashboard stats for manager:", currentUser)
+        
+        const response = await axios.get(`/manager/dashboard/?manager_id=${currentUser?.id}`)
+        const stats = [
+  {
+    label: "Total Team Members",
+    value: response.data.total_runners,
+    icon: Users,
+    color: "text-blue-400",
+    change: "+3 this month",
+  },
+  {
+    label: "Male Runners",
+    value: response.data.male_runners,
+    icon: Calendar,
+    color: "text-green-400",
+    change: "+2 pending",
+  },
+  {
+    label: "Female Runners",
+    value: response.data.female_runners,
+    icon: Trophy,
+    color: "text-purple-400",
+    change: "3 podium finishes",
+  },
+  {
+    label: "Pending Invites",
+    value: response.data.pending_invites,
+    icon: DollarSign,
+    color: "text-yellow-400",
+    change: "$750 this quarter",
+  },
+]
+        setDashboardStats(stats)
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error)
+      }
+    }
+    fetchDashboardStats()
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -156,7 +176,7 @@ export default function ManagerDashboard() {
 
       {/* Stats Grid */}
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
+        {DashboardStats.map((stat, index) => (
           <div
             key={index}
             className={`bg-[#868684]/5 border border-[#868684]/20 p-6 rounded-lg hover:bg-[#868684]/10 transition-all duration-300 ${

@@ -107,3 +107,11 @@ def partial_update_user(user_id: int, user_update: UserCreate, db: Session = Dep
     db.commit()
     db.refresh(user)
     return user
+
+@router.get("/dashboard/stats/")
+def get_runners_and_races_stats(db: Session = Depends(get_db)):
+    runners_count = db.query(User).filter(User.role == RoleEnum.runner).count()
+    races_count = db.query(Race).count()
+    return {
+            "runners_count": runners_count,
+            "races_count": races_count}
