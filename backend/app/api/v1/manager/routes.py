@@ -49,25 +49,109 @@ def invite_runners(emails: str, manager_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"invited": created, "total": len(created)}
 
+# @router.get("/dashboard/")
+# def manager_dashboard(manager_id: int, db: Session = Depends(get_db)):
+#     manager = db.query(User).filter(User.id == manager_id, User.role.in_([RoleEnum.manager, RoleEnum.vice_manager])).first()
+#     if not manager:
+#         raise HTTPException(status_code=403, detail="Manager not found")
+
+#     # Runners under manager's team
+#     team_runners = db.query(User).filter(
+#         User.role == RoleEnum.runner,
+#         User.team_name == manager.team_name
+#     ).all()
+
+#     # Pending invites sent by manager
+#     pending_invite_count = db.query(RunnerInvite).filter(
+#         RunnerInvite.manager_id == manager.id,
+#         RunnerInvite.status == InviteStatus.pending
+#     ).count()
+#     print(f"Pending invites count: {team_runners}")
+
+#     return {
+#         "total_runners": len(team_runners),
+#         "male_runners": len([r for r in team_runners if r.gender and r.gender.lower() == "male"]),
+#         "female_runners": len([r for r in team_runners if r.gender and r.gender.lower() == "female"]),
+#         "pending_invites": pending_invite_count
+#     }
 @router.get("/dashboard/")
 def manager_dashboard(manager_id: int, db: Session = Depends(get_db)):
-    runners = db.query(User).filter(User.role == RoleEnum.runner, User.team_name != None).all()
-    team_runners = [r for r in runners if r.team_name == db.query(User).get(manager_id).team_name]
+    manager = db.query(User).filter(
+        User.id == manager_id, 
+        User.role.in_([RoleEnum.manager, RoleEnum.vice_manager])
+    ).first()
+    
+    if not manager:
+        raise HTTPException(status_code=403, detail="Manager not found")
+
+    # Runners under manager's team
+    team_runners = db.query(User).filter(
+        User.role == RoleEnum.runner,
+        User.team_name == manager.team_name
+    ).all()
+    print(f"Team runners: {team_runners}")
+
+    # Safely count male and female runners
+    male_runners = sum(1 for r in team_runners if (r.gender or "").lower() == "male")
+    female_runners = sum(1 for r in team_runners if (r.gender or "").lower() == "female")
+
+    # Pending invites sent by manager
+    pending_invite_count = db.query(RunnerInvite).filter(
+        RunnerInvite.manager_id == manager.id,
+        RunnerInvite.status == InviteStatus.pending
+    ).count()
 
     return {
         "total_runners": len(team_runners),
-        "male_runners": len([r for r in team_runners if r.gender == "male"]),
-        "female_runners": len([r for r in team_runners if r.gender == "female"]),
-        "pending_invites": len([r for r in team_runners if not r.hashed_password])
+        "male_runners": male_runners,
+        "female_runners": female_runners,
+        "pending_invites": pending_invite_count
     }
 
-@router.get("/runners/", response_model=List[UserOut])
-def get_team_runners(manager_id: int, db: Session = Depends(get_db)):
-    manager = db.query(User).get(manager_id)
-    if not manager or manager.role not in [RoleEnum.manager, RoleEnum.vice_manager]:
-        raise HTTPException(status_code=403, detail="Unauthorized")
+# @router.get("/runners/")
+# def get_team_runners(manager_id: int, db: Session = Depends(get_db)):
+#     manager = db.query(User).get(manager_id)
+#     if not manager or manager.role not in [RoleEnum.manager, RoleEnum.vice_manager]:
+#         raise HTTPException(status_code=403, detail="Unauthorized")
 
-    return db.query(User).filter(User.role == RoleEnum.runner, User.team_name == manager.team_name).all()
+#     runners = db.query(User).filter(
+#         User.role == RoleEnum.runner,
+#         User.team_name == manager.team_name
+#     ).all()
+
+#     # Return runners with gender and phone number
+#     return [
+#         {
+#             "id": r.id,
+#             "first_name": r.first_name,
+#             "last_name": r.last_name,
+#             "email": r.email,
+#             "gender": r.gender,
+#             "phone_number": getattr(r, "phone_number", None)
+#         }
+#         for r in runners
+#     ]
+@router.get("/runners/")
+def get_unassigned_runners(db: Session = Depends(get_db)):
+    """
+    Returns all runners who are not under any manager (i.e., team_name is None or empty).
+    """
+    runners = db.query(User).filter(
+        User.role == RoleEnum.runner,
+        (User.team_name == None) | (User.team_name == "")
+    ).all()
+
+    return [
+        {
+            "id": r.id,
+            "first_name": r.first_name,
+            "last_name": r.last_name,
+            "email": r.email,
+            "gender": r.gender,
+            "phone_number": getattr(r, "phone_number", None)
+        }
+        for r in runners
+    ]
 
 @router.post("/register/{race_id}")
 def register_team(race_id: int, manager_id: int, db: Session = Depends(get_db)):
@@ -270,6 +354,37 @@ def respond_invite(invite_id: int, runner_id: int, response: str, db: Session = 
     return {"message": f"Invite {response}ed successfully"}
 
 
+# @router.get("/manager/pool")
+# def get_manager_pool(manager_id: int = Query(...), db: Session = Depends(get_db)):
+#     """
+#     Returns all runners who have accepted this manager's invite.
+#     """
+#     manager = db.query(User).filter(User.id == manager_id, User.role.in_([RoleEnum.manager, RoleEnum.vice_manager])).first()
+#     if not manager:
+#         raise HTTPException(status_code=403, detail="Manager not found")
+
+#     runners = (
+#         db.query(User)
+#         .join(RunnerInvite, RunnerInvite.runner_id == User.id)
+#         .filter(
+#             RunnerInvite.manager_id == manager.id,
+#             RunnerInvite.status == InviteStatus.accepted
+#         )
+#         .all()
+#     )
+
+#     return [
+#         {
+#             "id": r.id,
+#             "first_name": r.first_name,
+#             "last_name": r.last_name,
+#             "email": r.email,
+#             "gender": r.gender
+#         }
+#         for r in runners
+#     ]
+
+
 @router.get("/manager/pool")
 def get_manager_pool(manager_id: int = Query(...), db: Session = Depends(get_db)):
     """
@@ -289,16 +404,9 @@ def get_manager_pool(manager_id: int = Query(...), db: Session = Depends(get_db)
         .all()
     )
 
-    return [
-        {
-            "id": r.id,
-            "first_name": r.first_name,
-            "last_name": r.last_name,
-            "email": r.email,
-            "gender": r.gender
-        }
-        for r in runners
-    ]
+    return [r.__dict__ for r in runners]
+
+
 @router.get("/manager/team")
 def get_manager_team(manager_id: int = Query(...), db: Session = Depends(get_db)):
     """
@@ -333,3 +441,33 @@ def get_manager_pending_invite_count(manager_id: int = Query(...), db: Session =
         RunnerInvite.status == InviteStatus.pending
     ).count()
     return {"pending_invite_count": pending_count}
+
+
+@router.get("/manager/invited_runners", response_model=List[dict])
+def get_invited_runners(manager_id: int = Query(...), db: Session = Depends(get_db)):
+    """
+    Returns the names and emails of runners the manager has sent pending invites to.
+    """
+    manager = db.query(User).filter(User.id == manager_id, User.role.in_([RoleEnum.manager, RoleEnum.vice_manager])).first()
+    if not manager:
+        raise HTTPException(status_code=403, detail="Manager not found")
+    invites = db.query(RunnerInvite).filter(
+        RunnerInvite.manager_id == manager.id,
+        RunnerInvite.status == InviteStatus.pending
+    ).all()
+    runner_ids = [invite.runner_id for invite in invites]
+    runners = db.query(User).filter(User.id.in_(runner_ids)).all()
+    return [{"name": f"{r.first_name} {r.last_name}", "email": r.email, "id": r.id} for r in runners]
+
+
+@router.delete("/invite/{invite_id}")
+def delete_sent_invite(invite_id: int, manager_id: int, db: Session = Depends(get_db)):
+        invite = db.query(RunnerInvite).filter(RunnerInvite.id == invite_id).first()
+        if not invite:
+            raise HTTPException(status_code=404, detail="Invite not found")
+        if invite.manager_id != manager_id:
+            raise HTTPException(status_code=403, detail="Unauthorized to delete this invite")
+        db.delete(invite)
+        db.commit()
+        return {"message": "Invite deleted successfully"}
+

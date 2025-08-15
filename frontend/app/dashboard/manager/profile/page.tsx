@@ -1,5 +1,6 @@
 "use client"
 
+import axios from "@/app/lib/axios"
 import { useState, useEffect } from "react"
 import { User, Save, Camera, Mail, Phone, MapPin, Calendar, Shield, Bell, Eye, EyeOff } from "lucide-react"
 

@@ -16,6 +16,8 @@ import {
   MoreHorizontal,
 } from "lucide-react"
 import Link from "next/link"
+import axios from "../../../lib/axios"
+import { getCurrentUser } from "../../../lib/auth"
 
 // Mock data for team roster
 const teamRoster = [
@@ -202,6 +204,11 @@ export default function TeamManagementPage() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [genderFilter, setGenderFilter] = useState("all")
   const [selectedMembers, setSelectedMembers] = useState<number[]>([])
+  const currentUser = getCurrentUser()
+  const [teamRoster, setTeamRoster] = useState([])
+//  const [pendingInvites, setPendingInvitations] = useState([])
+  const [pendingInvites, setPendingInvitations] = useState<{ id: number, name: string, email: string }[]>([])
+
 
   useEffect(() => {
     setIsLoaded(true)
@@ -218,6 +225,69 @@ export default function TeamManagementPage() {
     return matchesSearch && matchesStatus && matchesGender
   })
 
+
+  // useEffect(() => {
+  //   const fetchTeamRoster = async () => {
+  //     try {
+  //       const response = await axios.get(`/manager/manager/pool?manager_id=${currentUser?.id}`)
+  //       if (!response.ok) throw new Error("Failed to fetch team roster")
+       
+  //       // Replace teamRoster with fetched data if needed
+  //       // setTeamRoster(data)
+  //     } catch (error) {
+  //       console.error(error)
+  //     }
+  //   }
+  //   fetchTeamRoster()
+  // }, [])
+  useEffect(() => {
+  const fetchTeamRoster = async () => {
+    try {
+      const { data } = await axios.get(`/manager/manager/pool?manager_id=${currentUser?.id}`)
+
+      const transformedData = data.map(member => ({
+        id: member.id,
+        name: `${member.first_name} ${member.last_name}`,
+        email: member.email,
+        phone: member.phone,
+        gender: member.gender,
+        age: new Date().getFullYear() - new Date(member.dob).getFullYear(),
+        position: member.role, // or something else if "role" isn't the position
+        specialty: member.specialization || member.preferred_distance,
+        bestTime: member.personal_best_10k || member.personal_best_5k,
+        racesCompleted: member.years_of_experience || 0,
+        location: `${member.city}, ${member.state}`,
+        status: "active" // or however you determine active/inactive/pending
+      }))
+
+      setTeamRoster(transformedData)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+  fetchTeamRoster()
+}, [])
+const cancelInvite = async (inviteId: number) => {
+  try {
+    await axios.delete(`/manager/invite/${inviteId}?manager_id=${currentUser.id}`)
+    setPendingInvitations((prev) => prev.filter((invite) => invite.id !== inviteId))
+  } catch (error) {
+    console.error("Failed to cancel invite:", error)
+  }
+}
+
+
+useEffect(() => {
+  const fetchPendingInvites = async () => {
+    try {
+      const response = await axios.get(`/manager/manager/invited_runners?manager_id=${currentUser?.id}`)
+      setPendingInvitations(response.data) // store the array directly
+    } catch (error) {
+      console.error(error)
+    }
+  }
+  fetchPendingInvites()
+}, [])
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
@@ -249,7 +319,7 @@ export default function TeamManagementPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="heading-font text-3xl font-bold text-[#EAEAE8] mb-2">Team Management</h1>
-          <p className="text-[#868684]">Manage your complete team roster</p>
+          <p className="text-[#868684]">Manage your complete team rosters</p>
         </div>
         <Link
           href="/dashboard/manager/team/invite"
@@ -416,7 +486,7 @@ export default function TeamManagementPage() {
                       </div>
                       <div className="flex items-center space-x-2 text-sm text-[#868684]">
                         <Phone className="w-3 h-3" />
-                        <span>{member.phone}</span>
+                        <span>{member.phone_number}</span>
                       </div>
                     </div>
                   </td>
@@ -455,11 +525,11 @@ export default function TeamManagementPage() {
       </div>
 
       {/* Pending Invitations */}
-      {pendingInvitations.length > 0 && (
+      {pendingInvites.length > 0 && (
         <div className="bg-[#868684]/5 border border-[#868684]/20 rounded-lg p-6">
           <h2 className="heading-font text-xl font-bold text-[#EAEAE8] mb-4">Pending Invitations</h2>
           <div className="space-y-3">
-            {pendingInvitations.map((invitation, index) => (
+            {pendingInvites.map((invitation, index) => (
               <div
                 key={invitation.id}
                 className={`flex items-center justify-between bg-[#868684]/10 border border-[#868684]/20 rounded-lg p-4 ${
@@ -470,14 +540,14 @@ export default function TeamManagementPage() {
                   <AlertCircle className="w-5 h-5 text-yellow-400" />
                   <div>
                     <div className="text-[#EAEAE8] font-medium">{invitation.email}</div>
-                    <div className="text-[#868684] text-sm">Invited on {invitation.invitedDate}</div>
+                    {/* <div className="text-[#868684] text-sm">Invited on {invitation.invitedDate}</div> */}
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <button className="text-[#EAEAE8] hover:text-white text-sm font-medium transition-colors">
+                  {/* <button className="text-[#EAEAE8] hover:text-white text-sm font-medium transition-colors">
                     Resend
-                  </button>
-                  <button className="text-red-400 hover:text-red-300 text-sm font-medium transition-colors">
+                  </button> */}
+                  <button onClick={()=>cancelInvite(invitation.id)} className="text-red-400 hover:text-red-300 text-sm font-medium transition-colors">
                     Cancel
                   </button>
                 </div>

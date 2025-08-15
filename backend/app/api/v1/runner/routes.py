@@ -96,3 +96,39 @@ def get_runner_invites(runner_id: int, db: Session = Depends(get_db)):
     """Fetch all invites for a given runner."""
     invites = db.query(RunnerInvite).filter(RunnerInvite.runner_id == runner_id).all()
     return invites
+
+
+@router.patch("/profile/", response_model=UserOut)
+def patch_runner_profile(runner_id: int, updates: UserUpdate, db: Session = Depends(get_db)):
+    runner = db.query(User).get(runner_id)
+    if not runner or runner.role != RoleEnum.runner:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    for field, value in updates.dict(exclude_unset=True).items():
+        if value != "":  # ignore empty strings so they don't overwrite existing values
+            setattr(runner, field, value)
+
+    db.commit()
+    db.refresh(runner)
+    return runner  # ✅ return the updated object
+
+
+@router.get("/my-manager/", response_model=UserOut)
+def get_my_manager(runner_id: int, db: Session = Depends(get_db)):
+    runner = db.query(User).filter(User.id == runner_id, User.role == RoleEnum.runner).first()
+    if not runner:
+        raise HTTPException(status_code=404, detail="Runner not found")
+    if not runner.team_name:
+        raise HTTPException(status_code=404, detail="Runner is not assigned to any team")
+    
+    print(f"Runner's team: '{runner.team_name}'")  # Debug
+
+    manager = db.query(User).filter(
+        User.role.in_([RoleEnum.manager, RoleEnum.vice_manager]),
+        User.team_name == runner.team_name
+    ).first()
+
+    if not manager:
+        raise HTTPException(status_code=404, detail=f"Manager not found for team '{runner.team_name}'")
+    
+    return manager
