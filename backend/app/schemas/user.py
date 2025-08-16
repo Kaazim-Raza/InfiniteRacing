@@ -80,3 +80,10 @@ class UserUpdate(BaseModel):
         if isinstance(v, str) and not v.strip():
             return None
         return v
+
+
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str = Field(..., min_length=6)
+    new_password: str = Field(..., min_length=6)

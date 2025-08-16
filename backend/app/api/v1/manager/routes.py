@@ -471,3 +471,47 @@ def delete_sent_invite(invite_id: int, manager_id: int, db: Session = Depends(ge
         db.commit()
         return {"message": "Invite deleted successfully"}
 
+# @router.get("/manager/profile")
+# def get_manager_profile(manager_id: int = Query(...), db: Session = Depends(get_db)):
+#     manager = db.query(User).filter(
+#         User.id == manager_id,
+#         User.role.in_([RoleEnum.manager, RoleEnum.vice_manager])
+#     ).first()
+#     if not manager:
+#         raise HTTPException(status_code=404, detail="Manager not found")
+#     return UserOut.from_orm(manager)
+
+# @router.get("manager/user/{user_id}")
+# def get_user(user_id: int, db: Session = Depends(get_db)):
+#         user = db.query(User).filter(User.id == user_id).first()
+#         if not user:
+#             raise HTTPException(status_code=404, detail="User not found")
+#         return user.__dict__
+@router.get("/manager/user/{user_id}")
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user_dict = user.__dict__.copy()
+    user_dict.pop("hashed_password", None)  # remove sensitive field
+    return user_dict
+
+@router.put("/manager/profile", response_model=UserOut)
+def update_manager_profile(
+        manager_id: int,
+        updates: UserUpdate,
+        db: Session = Depends(get_db)
+    ):
+        manager = db.query(User).filter(
+            User.id == manager_id,
+            User.role.in_([RoleEnum.manager, RoleEnum.vice_manager])
+        ).first()
+        if not manager:
+            raise HTTPException(status_code=403, detail="Manager not found or unauthorized")
+
+        for field, value in updates.dict(exclude_unset=True).items():
+            setattr(manager, field, value)
+
+        db.commit()
+        db.refresh(manager)
+        return manager

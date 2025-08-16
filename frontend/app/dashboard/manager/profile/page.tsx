@@ -3,6 +3,7 @@
 import axios from "@/app/lib/axios"
 import { useState, useEffect } from "react"
 import { User, Save, Camera, Mail, Phone, MapPin, Calendar, Shield, Bell, Eye, EyeOff } from "lucide-react"
+import { getCurrentUser } from "@/app/lib/auth"
 
 export default function ManagerProfilePage() {
   const [isLoaded, setIsLoaded] = useState(false)
@@ -10,6 +11,8 @@ export default function ManagerProfilePage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  // const [profileData, setProfileData] = useState()
+  const cur = getCurrentUser()
 
   const [profileData, setProfileData] = useState({
     // Personal Information
@@ -50,7 +53,43 @@ export default function ManagerProfilePage() {
     newPassword: "",
     confirmPassword: "",
   })
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await axios.get(`/manager/manager/user/${cur.id}`);
+        setProfileData({
+          firstName: response.data.first_name || "",
+          lastName: response.data.last_name || "",
+          email: response.data.email || "",
+          phone: response.data.phone || "",
+          dateOfBirth: response.data.dob || "",
+          address: response.data.street || "",
+          city: response.data.city || "",
+          state: response.data.state || "",
+          zipCode: response.data.zip_code || "",
+          emergencyContact: response.data.emergency_contact_name || "",
+          emergencyPhone: response.data.emergency_contact_phone || "",
+          teamName: response.data.team_name || "",
+          teamRole: response.data.team_role || "",
+          coachingExperience: response.data.coaching_experience || "",
+          specialization: response.data.specialization || "",
+          bio: response.data.bio || "",
+          emailNotifications: response.data.email_notifications ?? true,
+          smsNotifications: response.data.sms_notifications ?? false,
+          raceReminders: response.data.race_reminders ?? true,
+          teamUpdates: response.data.team_updates ?? true,
+          paymentAlerts: response.data.payment_alerts ?? true,
+          profileVisibility: response.data.profile_visibility || "team",
+          showContactInfo: response.data.show_contact_info ?? true,
+          showPerformanceStats: response.data.show_performance_stats ?? true,
+        });
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      }
+    };
 
+    fetchProfile();
+  }, []);
   useEffect(() => {
     setIsLoaded(true)
   }, [])
@@ -60,6 +99,7 @@ export default function ManagerProfilePage() {
       ...prev,
       [key]: value,
     }))
+    console.log("Profile updated:", key, value)
   }
 
   const handlePasswordChange = (key: string, value: string) => {
@@ -69,9 +109,33 @@ export default function ManagerProfilePage() {
     }))
   }
 
-  const handleSaveProfile = () => {
-    console.log("Saving profile:", profileData)
-    // Handle save logic here
+  const handleSaveProfile = async () => {
+    try {
+     const requestBody = {
+  first_name: profileData.firstName,
+  last_name: profileData.lastName,
+  dob: profileData.dateOfBirth,
+  phone: profileData.phone,
+  street: profileData.address,
+  city: profileData.city,
+  state: profileData.state,
+  zip_code: profileData.zipCode,
+  emergency_contact_name: profileData.emergencyContact,
+  emergency_contact_phone: profileData.emergencyPhone,
+  team_name: profileData.teamName,
+  coaching_experience: profileData.coachingExperience,
+  specialization: profileData.specialization,
+  bio: profileData.bio
+}
+
+
+      const response = await axios.put(`/manager/manager/profile?manager_id=${cur.id}`, requestBody)
+      console.log("Profile saved:", response.data)
+      // Optionally show a success message or update state
+    } catch (error) {
+      console.error("Error saving profile:", error)
+      // Optionally show an error message
+    }
   }
 
   const handleChangePassword = () => {

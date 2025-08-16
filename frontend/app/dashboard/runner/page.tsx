@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { User, Calendar, Trophy, Target, CheckCircle, AlertCircle, Users, MapPin, Award } from "lucide-react"
 import Link from "next/link"
+import axios from "@/app/lib/axios"
+import { getCurrentUser } from "@/app/lib/auth"
 
 // Mock data
 const runnerStats = [
@@ -49,10 +51,38 @@ const achievements = [
 
 export default function RunnerDashboard() {
   const [isLoaded, setIsLoaded] = useState(false)
+  const [invites, setInvites] = useState<any[]>([])
+  const cur = getCurrentUser()
 
   useEffect(() => {
     setIsLoaded(true)
   }, [])
+useEffect(() => {
+  setIsLoaded(true)
+
+  // Fetch invites
+  async function loadInvites() {
+    try {
+      const res = await axios.get(`/runner/invites/?runner_id=${cur.id}`)
+      setInvites(res.data)
+    } catch (err) {
+      console.error("Failed to fetch invites", err)
+    }
+  }
+
+  loadInvites()
+}, [])
+const respondInvite = async (inviteId: number, action: "accept" | "decline") => {
+  try {
+    const res = await axios.post(`/runner/${inviteId}/respond?action=${action}&runner_id=${cur.id}`)
+    console.log(res.data)
+
+    // Update UI (remove invite from list)
+    setInvites(prev => prev.filter(invite => invite.id !== inviteId))
+  } catch (err) {
+    console.error("Failed to respond", err)
+  }
+}
 
   return (
     <div className="space-y-8">
@@ -227,6 +257,46 @@ export default function RunnerDashboard() {
           </div>
         </div>
       </div>
+      {/* Invites */}
+{invites.length > 0 && (
+  <div className="bg-[#868684]/5 border border-[#868684]/20 rounded-lg p-6">
+    <h2 className="heading-font text-xl font-bold text-[#EAEAE8] mb-6">Team Invites</h2>
+
+    <div className="space-y-4">
+      {invites.map((invite, index) => (
+        <div
+          key={invite.id}
+          className={`p-4 bg-black/20 border border-[#868684]/10 rounded-lg flex items-center justify-between transition-all duration-300 ${
+            isLoaded ? `opacity-100 translate-x-0 delay-${(index + 20) * 100}` : "opacity-0 translate-x-4"
+          }`}
+        >
+          <div>
+            <p className="text-white font-medium">Invite from Manager #{invite.manager_id}</p>
+            <p className="text-sm text-[#868684]">Status: {invite.status}</p>
+          </div>
+
+          {invite.status === "pending" && (
+            <div className="flex space-x-2">
+              <button
+                onClick={() => respondInvite(invite.id, "accept")}
+                className="px-3 py-1 bg-green-500/20 text-green-300 border border-green-500/30 rounded hover:bg-green-500/30"
+              >
+                Accept
+              </button>
+              <button
+                onClick={() => respondInvite(invite.id, "decline")}
+                className="px-3 py-1 bg-red-500/20 text-red-300 border border-red-500/30 rounded hover:bg-red-500/30"
+              >
+                Decline
+              </button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
 
       {/* Quick Actions */}
       <div className="grid md:grid-cols-3 gap-6">

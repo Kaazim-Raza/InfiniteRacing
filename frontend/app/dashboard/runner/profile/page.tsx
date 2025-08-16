@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState , useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,13 +10,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { User, Bell, Shield, Camera, Save, Eye, EyeOff } from "lucide-react"
+import { getCurrentUser } from "@/app/lib/auth"
+import axios from "../../../lib/axios"
 
 export default function RunnerProfilePage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const cur = getCurrentUser()
 
-  const [profileData, setProfileData] = useState({
+  const [profileData, setProfileData] = useState(
+    {
     firstName: "John",
     lastName: "Doe",
     email: "john.doe@email.com",
@@ -57,6 +61,69 @@ export default function RunnerProfilePage() {
     showRaceHistory: true,
   })
 
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const response = await axios.get(`/manager/manager/user/${cur.id}`)
+        console.log("Fetched profile data:", response.data)
+       const data = {
+  firstName: response.data.first_name||"",            // ✅ maps
+  lastName: response.data.last_name||"",              // ✅ maps
+  email: response.data.email||"",                     // ✅ maps
+  phone: response.data.phone ||"",                     // ✅ maps
+  dateOfBirth: response.data.dob||"",                 // ✅ maps
+  gender: response.data.gender ||"male",                   // ✅ maps
+  emergencyContact: response.data.emergency_contact_name||"",   // ✅ maps
+  emergencyPhone: response.data.emergency_contact_phone||"",    // ✅ maps
+  specialization: response.data.specialization ||"middle-distance",   // ✅ maps
+  address: response.data.street||"",                  // ✅ maps
+  city: response.data.city||"",                       // ✅ maps
+  state: response.data.state||"",                     // ✅ maps
+  zipCode: response.data.zip_code||"",                // ✅ maps
+  bio: response.data.bio||"",                         // ✅ maps
+  preferredDistance: response.data.preferred_distance||"",  // ✅ maps
+  personalBest5k: response.data.personal_best_5k||"", // ✅ maps
+  personalBest10k: response.data.personal_best_10k||"", // ✅ maps
+  runningExperience: response.data.years_of_experience||"", // ✅ maps
+}
+
+        setProfileData(data)
+      } catch (error) {
+        // handle error (optional)
+      }
+    }
+    fetchProfile()
+  }, [])
+
+  async function updateProfile() {
+    const payload = {
+      first_name: profileData.firstName,
+      last_name: profileData.lastName,
+      email: profileData.email,
+      phone: profileData.phone,
+      dob: profileData.dateOfBirth,
+      gender: profileData.gender,
+      emergency_contact_name: profileData.emergencyContact,
+      emergency_contact_phone: profileData.emergencyPhone,
+      specialization: profileData.specialization,
+      street: profileData.address,
+      city: profileData.city,
+      state: profileData.state,
+      zip_code: profileData.zipCode,
+      bio: profileData.bio,
+      preferred_distance: profileData.preferredDistance,
+      personal_best_5k: profileData.personalBest5k,
+      personal_best_10k: profileData.personalBest10k,
+      years_of_experience: profileData.runningExperience,
+    }
+    try {
+      await axios.put(`/runner/profile/?runner_id=${cur.id}`, payload)
+      alert("Profile updated successfully!")
+      // Optionally show success message or reload data
+    } catch (error) {
+      // Optionally handle error
+    }
+  }
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -371,7 +438,7 @@ export default function RunnerProfilePage() {
               </div>
 
               <div className="flex justify-end">
-                <Button className="bg-[#EAEAE8] text-black px-6 py-3 font-bold hover:bg-white transition-all duration-300 hover:scale-105">
+                <Button onClick={()=>updateProfile()} className="bg-[#EAEAE8] text-black px-6 py-3 font-bold hover:bg-white transition-all duration-300 hover:scale-105">
                   <Save className="w-4 h-4 mr-2" />
                   Save Changes
                 </Button>

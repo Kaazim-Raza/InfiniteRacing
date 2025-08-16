@@ -5,7 +5,12 @@ from app.models.user import User, RoleEnum
 from app.schemas.user import UserOut, UserUpdate
 from typing import List
 from app.models.invite import RunnerInvite, InviteStatus  
+from app.schemas.user import ChangePasswordRequest
 from app.schemas.invite import InviteOut  # <-- You should have a schema for invites
+from app.core.security import get_password_hash, verify_password
+
+# Add this schema to app/schemas/user.py:
+
 
 
 router = APIRouter()
@@ -132,3 +137,16 @@ def get_my_manager(runner_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail=f"Manager not found for team '{runner.team_name}'")
     
     return manager
+
+# @router.post("/change-password/")
+# def change_runner_password(runner_id: int, data: ChangePasswordRequest, db: Session = Depends(get_db)):
+#         runner = db.query(User).filter(User.id == runner_id, User.role == RoleEnum.runner).first()
+#         if not runner:
+#             raise HTTPException(status_code=404, detail="Runner not found")
+
+#         if not verify_password(data.old_password):
+#             raise HTTPException(status_code=400, detail="Old password is incorrect")
+
+#         runner.set_password(data.new_password)
+#         db.commit()
+#         return {"message": "Password updated successfully"}
