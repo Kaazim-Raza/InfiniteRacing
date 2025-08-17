@@ -115,3 +115,60 @@ def get_runners_and_races_stats(db: Session = Depends(get_db)):
     return {
             "runners_count": runners_count,
             "races_count": races_count}
+
+
+@router.get("/users/team/{runner_id}", response_model=List[UserOut])
+def view_team_members(runner_id: int, db: Session = Depends(get_db)):
+    runner = db.query(User).filter(User.id == runner_id, User.role == RoleEnum.runner).first()
+    if not runner:
+        raise HTTPException(status_code=403, detail="Runner not found or unauthorized")
+    if not runner.team_name:
+        return []
+    return db.query(User).filter(
+        User.role == RoleEnum.runner,
+        User.team_name == runner.team_name,
+        User.id != runner.id
+    ).all()
+@router.get("/users/manager/{runner_id}", response_model=UserOut)
+def get_team_manager(runner_id: int, db: Session = Depends(get_db)):
+    runner = db.query(User).filter(User.id == runner_id, User.role == RoleEnum.runner).first()
+    if not runner:
+        raise HTTPException(status_code=403, detail="Runner not found or unauthorized") 
+    if not runner.team_name:
+        raise HTTPException(status_code=404, detail="Runner is not assigned to any team")
+    manager = db.query(User).filter(
+        User.role == RoleEnum.manager,
+        User.team_name == runner.team_name
+    ).first()
+    if not manager:
+        raise HTTPException(status_code=404, detail="Manager not found for this team")
+    return manager
+
+@router.put("/users/profile/{runner_id}", response_model=UserOut)
+def update_runner_profile(runner_id: int, updates: UserUpdate, db: Session = Depends(get_db)):
+    runner = db.query(User).get(runner_id)
+    if not runner or runner.role != RoleEnum.runner:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    for field, value in updates.dict(exclude_unset=True).items():
+        setattr(runner, field, value)
+    db.commit()
+    db.refresh(runner)
+    return runner
+
+@router.put("/races/{race_id}", response_model=RaceOut)
+def update_race(race_id: int, race_update: RaceCreate, db: Session = Depends(get_db)):
+        race = db.query(Race).filter(Race.id == race_id).first()
+        if not race:
+            raise HTTPException(status_code=404, detail="Race not found")
+        for field, value in race_update.dict(exclude_unset=True).items():
+            setattr(race, field, value)
+        db.commit()
+        db.refresh(race)
+        return race
+
+@router.get("/races/{race_id}", response_model=RaceOut)
+def get_race(race_id: int, db: Session = Depends(get_db)):
+            race = db.query(Race).filter(Race.id == race_id).first()
+            if not race:
+                raise HTTPException(status_code=404, detail="Race not found")
+            return race

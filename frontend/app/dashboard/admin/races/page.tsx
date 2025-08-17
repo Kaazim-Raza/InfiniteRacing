@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import axios from "../../../lib/axios"
+import { useRouter } from "next/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Calendar,
@@ -69,7 +70,7 @@ function RaceDetailsModal({
       registrationDate: "2024-01-20",
     },
   ]
-
+  const router = useRouter()
   const getStatusColor = (status: string) => {
     switch (status) {
       case "complete":
@@ -93,9 +94,10 @@ function RaceDetailsModal({
         return "bg-gray-500/20 text-gray-300 border-gray-500/30"
     }
   }
-
+  
   const totalRevenue = registeredTeams.length * race.entry_fee
   const registrationProgress = (registeredTeams.length / race.maxTeams) * 100
+  
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -349,6 +351,7 @@ export default function AdminRacesPage() {
   const [race, setRaces] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+   const router = useRouter()
 
   const races = [
     {
@@ -555,10 +558,14 @@ export default function AdminRacesPage() {
                     <Eye className="w-4 h-4 mr-2" />
                     View Details
                   </Button>
-                  <Button size="sm" className="flex-1 bg-[#EAEAE8] text-black hover:bg-white">
+                    <Button
+                    size="sm"
+                    className="flex-1 bg-[#EAEAE8] text-black hover:bg-white"
+                     onClick={() => router.push(`/dashboard/admin/races/${race.id}`)}
+                    >
                     <Edit className="w-4 h-4 mr-2" />
                     Edit
-                  </Button>
+                    </Button>
                 </div>
               </div>
             ))}

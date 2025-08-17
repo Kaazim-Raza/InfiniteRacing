@@ -7,6 +7,7 @@ import { useState, useEffect } from "react"
 import { Calendar, Users, Clock, Save, Eye, ArrowLeft, CheckCircle, AlertCircle } from "lucide-react"
 import Link from "next/link"
 // import { useRouter } from "next/router";
+import { useParams , useRouter } from "next/navigation";
 
 interface RaceFormData {
   name: string
@@ -30,6 +31,9 @@ export default function CreateRacePage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoaded, setIsLoaded] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const params = useParams();
+  const raceId = params?.id && params.id !== "create" ? params.id : null
+  const router = useRouter();
   const [formData, setFormData] = useState<RaceFormData>({
     name: "",
     description: "",
@@ -79,6 +83,48 @@ export default function CreateRacePage() {
       }))
     }
   }
+
+  useEffect(() => {
+    // Assume you get the raceId from the URL params (e.g., using next/router or next/navigation)
+    // For example, if using next/navigation:
+    // import { useParams } from "next/navigation";
+    // const params = useParams();
+    // const raceId = params?.id;
+
+    // Replace this with your actual way of getting the raceId
+    // const url = window.location.pathname;
+    // const match = url.match(/\/races\/edit\/(\d+)/);
+    // const raceId = match ? match[1] : null;
+
+    if (raceId) {
+      api.get(`/admin/races/${raceId}/`)
+        .then((res) => {
+          const data = res.data;
+          setFormData({
+            name: data.name || "",
+            description: data.description || "",
+            date: data.date ? data.date.slice(0, 10) : "",
+            time: data.time || "",
+            location: data.location || "",
+            maxTeams: data.max_teams ? String(data.max_teams) : "",
+            registrationDeadline: data.registration_deadline
+              ? new Date(data.registration_deadline).toISOString().slice(0, 16)
+              : "",
+            entryFee: data.entry_fee ? String(data.entry_fee) : "",
+            allowMale: data.team_type === "male" || data.team_type === "coed",
+            allowFemale: data.team_type === "female" || data.team_type === "coed",
+            allowCoed: data.team_type === "coed",
+            maxRunnersPerTeam: data.max_runners ? String(data.max_runners) : "4",
+            minMaleRunners: data.coed_min_male ? String(data.coed_min_male) : "0",
+            minFemaleRunners: data.coed_min_female ? String(data.coed_min_female) : "0",
+            highSchoolOnly: !!data.high_school_only,
+          });
+        })
+        .catch((err) => {
+          console.error("Failed to fetch race data", err);
+        });
+    }
+  }, []);
 
   const validateStep = (step: number): boolean => {
     const errors: Record<string, string> = {}
@@ -147,9 +193,16 @@ export default function CreateRacePage() {
     registration_deadline: new Date(formData.registrationDeadline).toISOString(),
     entry_fee: parseFloat(formData.entryFee),
 };
-
+if (raceId){
+  const res = await api.put(`/admin/races/${raceId} `,payload);
+  // if (res.status === 200) {
+    alert("Update Successful")
+    router.push("/dashboard/admin/races")
+}else {
       await api.post("/admin/races/", payload);
       alert("Race created successfully!");
+       router.push("/dashboard/admin/races")
+    }
       // router.push("/races");
     } catch (err: any) {
       console.error(err);
@@ -583,7 +636,8 @@ export default function CreateRacePage() {
               className="bg-green-500 text-white px-8 py-3 font-bold hover:bg-green-400 transition-all duration-300 hover:scale-105 flex items-center space-x-2"
             >
               <Save className="w-5 h-5" />
-              <span>Create Race</span>
+
+                <span>{raceId ? "Update Race" : "Create Race"}</span>
             </button>
           )}
         </div>
