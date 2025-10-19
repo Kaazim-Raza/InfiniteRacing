@@ -80,6 +80,7 @@ app.include_router(manager_routes.router, prefix=f"{settings.API_V1_STR}/manager
 app.include_router(runner_routes.router, prefix=f"{settings.API_V1_STR}/runner", tags=["runner"])
 
 # Custom OpenAPI schema for Swagger UI auth
+#NEw 
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
